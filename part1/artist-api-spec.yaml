@@ -1,0 +1,134 @@
+openapi: 3.1.1
+info:
+  title: Record Label API
+  description: API for managing a database of artists for a record label.
+  version: 1.0.0
+
+servers:
+  - url: https://api.recordlabel.com/v1
+    description: Production server
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Basic authentication to secure the API.
+
+  schemas:
+    Artist:
+      type: object
+      required:
+        - name
+        - genre
+        - albumsPublished
+        - username
+      properties:
+        name:
+          type: string
+          description: The full name of the artist.
+          example: "John Doe"
+        genre:
+          type: string
+          description: The musical genre of the artist.
+          example: "Rock"
+        albumsPublished:
+          type: integer
+          description: Number of albums published under the label.
+          minimum: 0
+          example: 5
+        username:
+          type: string
+          description: Unique identifier/username for the artist.
+          example: "johndoe_official"
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+security:
+  - basicAuth: []
+
+paths:
+  /artists:
+    get:
+      summary: Get a list of artists
+      description: Returns a list of artists with optional pagination.
+      parameters:
+        - name: offset
+          in: query
+          description: The page number (starting from 0).
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          in: query
+          description: The number of items per page.
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: A list of artists.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Artist'
+        '401':
+          description: Unauthorized - Basic authentication failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error.
+
+    post:
+      summary: Add a new artist
+      description: Adds a new artist record to the database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Artist'
+      responses:
+        '201':
+          description: Artist created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artist'
+        '400':
+          description: Bad Request - Invalid artist data.
+        '401':
+          description: Unauthorized.
+
+  /artists/{artistname}:
+    get:
+      summary: Get artist by username
+      description: Returns detailed information for a specific artist.
+      parameters:
+        - name: artistname
+          in: path
+          required: true
+          description: The username of the artist.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Artist found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artist'
+        '404':
+          description: Artist not found.
+        '401':
+          description: Unauthorized.
