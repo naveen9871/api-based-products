@@ -1,147 +1,124 @@
-# API Paradigm Comparison: REST vs. RPC vs. GraphQL
+# Comparison of REST, RPC, and GraphQL
 
-## Executive Summary
-This document provides a comprehensive analysis of three API architectural paradigms implemented in the Book Info Service. Each paradigm offers distinct advantages and trade-offs suitable for different use cases.
+This section compares the three paradigms implemented for the same "Book Info Service" domain. Using one shared domain makes the comparison more meaningful because the differences come from the API style rather than from different business requirements.
 
----
+The three implementations are:
 
-## 1. REST (Representational State Transfer)
+- REST using `/books` and `/books/{id}`
+- RPC using `/getBook` and `/createBook`
+- GraphQL using `/graphql`
 
-### Implementation Details
-- **Endpoints**: `/books`, `/books/{id}`
-- **HTTP Methods**: GET, POST, PUT, DELETE
-- **Data Format**: JSON with HATEOAS links
-- **Status Codes**: 200, 201, 400, 404, 500
+All three expose the same core book information, including `id`, `title`, `author`, `year`, and `genre`.
 
-### Strengths
-✅ **Excellent Cachability**: HTTP caching mechanisms work natively  
-✅ **Stateless Design**: Each request contains all needed information  
-✅ **Discoverable**: HATEOAS links enable API exploration  
-✅ **Standardized**: Well-understood conventions and best practices  
-✅ **Scalable**: Horizontal scaling through load balancers  
-✅ **Tooling**: Rich ecosystem of testing and documentation tools  
+## 1. REST
 
-### Limitations
-❌ **Over-fetching**: Endpoints return fixed data structures  
-❌ **Under-fetching**: Multiple requests often needed for related data  
-❌ **Versioning Complexity**: URI or header-based versioning required  
-❌ **Documentation Overhead**: OpenAPI specs need maintenance  
+REST is resource-oriented. In this design, a book is treated as a resource and is addressed through nouns rather than actions.
 
-### Best Use Cases
-- Public APIs with diverse clients
-- Cacheable read-heavy applications
-- Microservices with clear resource boundaries
-- APIs requiring CDN integration
+Examples:
 
----
+- `GET /books`
+- `GET /books/1`
 
-## 2. RPC (Remote Procedure Call)
+Analytical points:
 
-### Implementation Details
-- **Endpoints**: `/rpc`, `/getBook`, `/createBook`
-- **Method**: Primarily POST
-- **Protocol**: JSON-RPC 2.0 style
-- **Actions**: getBook, createBook, searchBooks
+- REST aligns naturally with HTTP semantics, so methods such as `GET` and `POST` carry clear meaning.
+- It is highly cacheable, especially for read operations, because standard HTTP infrastructure already understands URI-based resources.
+- It is loosely coupled compared with RPC because clients interact with resources rather than internal procedure names.
+- A common limitation is over-fetching, since the server usually returns a fixed representation whether or not the client needs every field.
 
-### Strengths
-✅ **Action Clarity**: Endpoints clearly describe operations  
-✅ **Simple Implementation**: Minimal routing logic required  
-✅ **Low Overhead**: No HTTP method semantics to maintain  
-✅ **Batch Operations**: Easy to implement batch processing  
-✅ **Internal Efficiency**: Ideal for service-to-service communication  
+For this assignment, REST is the most intuitive paradigm because the book collection is easy to model as a set of resources.
 
-### Limitations
-❌ **Tight Coupling**: Clients must know exact procedure names  
-❌ **Poor Discoverability**: No standard way to explore endpoints  
-❌ **HTTP Misuse**: Often returns 200 OK even for errors  
-❌ **Caching Difficulty**: POST requests not cacheable by default  
-❌ **Documentation Dependency**: Heavy reliance on external docs  
+## 2. RPC
 
-### Best Use Cases
-- Internal microservices communication
-- Action-heavy applications (e.g., sending emails, processing payments)
-- Legacy system integration
-- Real-time command execution
+RPC is action-oriented. Instead of focusing on resources, it focuses on invoking operations.
 
----
+Examples:
+
+- `POST /getBook`
+- `POST /createBook`
+
+Analytical points:
+
+- RPC can be easier to design when business logic is naturally procedural.
+- It tends to be tightly coupled because clients must know the exact operation names exposed by the server.
+- It is less aligned with HTTP conventions, since the action is embedded in the endpoint or request body rather than being expressed through standard HTTP method semantics.
+- It is usually less cache-friendly than REST because many RPC interactions are sent as `POST` requests.
+
+For this assignment, RPC demonstrates how the same book domain can be exposed in an operation-centric way, which is useful when the emphasis is on commands rather than resource state.
 
 ## 3. GraphQL
 
-### Implementation Details
-- **Endpoint**: Single `/graphql` endpoint
-- **Schema**: Strongly typed schema definition
-- **Operations**: Queries, Mutations, Subscriptions
-- **Features**: GraphiQL interface, real-time subscriptions
+GraphQL is query-oriented. It exposes a schema and allows the client to request exactly the fields it needs.
 
-### Strengths
-✅ **No Over/Under-fetching**: Clients request exactly what they need  
-✅ **Single Endpoint**: All operations through one URL  
-✅ **Strong Typing**: Self-documenting schema with validation  
-✅ **Rapid Iteration**: Schema evolution without versioning  
-✅ **Batching**: Multiple queries in single request  
-✅ **Introspection**: Built-in API discovery  
-✅ **Tooling**: GraphiQL, Apollo Studio, Code generation  
+Example:
 
-### Limitations
-❌ **Complex Implementation**: Resolvers, schema, context management  
-❌ **Caching Challenges**: Requires client-side solutions (Apollo Cache)  
-❌ **Query Complexity**: DOS risk without depth limiting  
-❌ **File Upload Complexity**: Requires separate handling or extensions  
-❌ **Learning Curve**: Steeper than REST/RPC  
-❌ **N+1 Problem**: Requires dataloader patterns for efficiency  
+```graphql
+query {
+  book(id: 1) {
+    title
+    author
+  }
+}
+```
 
-### Best Use Cases
-- Mobile applications with bandwidth constraints
-- Complex UIs with varying data requirements
-- Rapid frontend development
-- Aggregating multiple data sources
-- Real-time applications (with subscriptions)
+Analytical points:
 
----
+- GraphQL addresses both over-fetching and under-fetching by allowing clients to shape the response.
+- It is flexible for front-end applications because different clients can request different projections of the same resource without introducing multiple endpoints.
+- It has stronger schema-driven discoverability through introspection.
+- The main trade-off is implementation complexity, including resolver design, schema maintenance, and query validation.
 
-## Comparative Analysis Matrix
+For this assignment, GraphQL shows how the same book data can be provided in a client-driven form rather than a server-defined representation.
 
-| Feature | REST | RPC | GraphQL |
+## Same data, different interaction style
+
+REST:
+
+```http
+GET /books/1
+```
+
+RPC:
+
+```http
+POST /getBook
+{
+  "id": 1
+}
+```
+
+GraphQL:
+
+```graphql
+query {
+  book(id: 1) {
+    id
+    title
+    author
+    year
+    genre
+  }
+}
+```
+
+Each request returns information about the same conceptual entity, but the interaction model is different:
+
+- REST asks for a resource
+- RPC invokes a procedure
+- GraphQL submits a structured query
+
+## Comparative evaluation
+
+| Criterion | REST | RPC | GraphQL |
 |---------|------|-----|---------|
-| **Learning Curve** | Low | Low | Medium-High |
-| **Caching** | ⭐⭐⭐⭐⭐ | ⭐ | ⭐⭐ |
-| **Flexibility** | ⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **Performance** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
-| **Tooling** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ |
-| **Type Safety** | ⭐⭐ | ⭐ | ⭐⭐⭐⭐⭐ |
-| **Documentation** | ⭐⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **Versioning** | ⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **Error Handling** | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ |
-| **Community Support** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ |
-
----
-
-## Decision Framework
-
-### Choose REST When:
-- Building public APIs with broad client base
-- Need simple HTTP caching
-- Resources map clearly to CRUD operations
-- Team is new to API development
-
-### Choose RPC When:
-- Building internal microservices
-- Actions don't map cleanly to CRUD
-- Performance is critical
-- Working with legacy systems
-
-### Choose GraphQL When:
-- Mobile apps with bandwidth concerns
-- Complex data requirements vary by client
-- Rapid frontend iteration needed
-- Aggregating multiple data sources
-
----
+| Primary focus | Resources | Operations | Data queries |
+| Coupling | Moderate | High | Moderate |
+| Cacheability | Strong | Weak | Moderate |
+| Flexibility of returned fields | Low | Low | High |
+| Ease of implementation | High | High | Moderate to low |
+| Alignment with HTTP semantics | Strong | Weak | Mixed |
+| Typical risk | Over-fetching | Tight coupling | Query complexity |
 
 ## Conclusion
 
-This implementation demonstrates that **no single paradigm is universally superior**. The Book Info Service successfully implements all three patterns, showcasing their respective strengths:
-
-1. **REST** provides excellent cacheability and standardization
-2. **RPC** offers superior performance for specific actions
-3. **GraphQL** delivers maximum flexibility for complex queries
+No paradigm is universally best. REST is appropriate when the system is centered on resources and predictable HTTP behavior. RPC is suitable when the service is fundamentally operation-driven. GraphQL is most useful when clients need flexible access to the same underlying data. The Book Info Service demonstrates that the same domain can be expressed through all three paradigms, but each paradigm optimizes for a different architectural priority: standardization in REST, procedural clarity in RPC, and response flexibility in GraphQL.

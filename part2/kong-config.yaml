@@ -4,104 +4,37 @@ _transform: true
 services:
   - name: record-label-service
     url: http://artist-api-service:8080
-    connect_timeout: 5000
-    write_timeout: 60000
-    read_timeout: 60000
-    retries: 3
     routes:
-      - name: artist-route
+      - name: artists-route
         paths:
           - /artists
         strip_path: false
-        preserve_host: true
-        protocols:
-          - http
-          - https
         methods:
           - GET
           - POST
-          - PUT
-          - DELETE
-    
+
     plugins:
-      # Rate Limiting - Core requirement
+      - name: basic-auth
+        enabled: true
+        config:
+          hide_credentials: true
+
       - name: rate-limiting
         enabled: true
         config:
           minute: 5
-          hour: 100
           policy: local
           limit_by: consumer
-          fault_tolerant: true
-          hide_client_headers: false
-      
-      # Request Size Limiting - Core requirement
+
       - name: request-size-limiting
         enabled: true
         config:
-          allowed_payload_size: 1 # 1MB in megabytes
-      
-      # Additional security plugins for better marks
-      - name: cors
-        enabled: true
-        config:
-          origins:
-            - "*"
-          methods:
-            - GET
-            - POST
-            - PUT
-            - DELETE
-          headers:
-            - Accept
-            - Accept-Version
-            - Content-Length
-            - Content-MD5
-            - Content-Type
-            - Date
-            - Authorization
-          exposed_headers:
-            - X-Total-Count
-            - X-RateLimit-Limit-minute
-            - X-RateLimit-Remaining-minute
-          credentials: true
-          max_age: 3600
-      
-      - name: bot-detection
-        enabled: true
-        config:
-          allow:
-            - "Googlebot"
-            - "Bingbot"
-      
-      - name: proxy-cache
-        enabled: true
-        config:
-          response_code:
-            - 200
-          request_method:
-            - GET
-          content_type:
-            - application/json
-          cache_ttl: 300
-          strategy: memory
-          memory:
-            dictionary_name: kong_cache
+          allowed_payload_size: 1
 
-# Consumer configuration for authentication
 consumers:
-  - username: record-label-admin
-    custom_id: admin-001
-  
-  - username: record-label-api-client
-    custom_id: client-001
+  - username: record-label-client
 
-# Basic Authentication credentials
 basicauth_credentials:
-  - consumer: record-label-admin
-    username: admin
-    password: secure_admin_password_123
-  
-  - consumer: record-label-api-client
-    username: api_client
-    password: client_api_key_456
+  - consumer: record-label-client
+    username: apiuser
+    password: apipassword123

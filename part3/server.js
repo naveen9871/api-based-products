@@ -5,7 +5,7 @@ const { buildSchema } = require('graphql');
 const app = express();
 app.use(express.json());
 
-// Enhanced Data Source with more fields for demonstration
+// In-memory book data used by all three paradigms
 const books = [
   { 
     id: 1, 
