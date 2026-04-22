@@ -1,19 +1,37 @@
 openapi: 3.1.1
 info:
   title: Record Label API
-  description: API for managing a database of artists for a record label.
+  description: |
+    A comprehensive API for managing a record label's artist database.
+    
+    ## Features
+    - Secure Basic Authentication
+    - Paginated artist listings
+    - Full CRUD operations for artists
+    - Comprehensive error handling
+    
+    ## Authentication
+    All endpoints require Basic Authentication credentials.
   version: 1.0.0
+  contact:
+    name: Record Label API Support
+    email: api-support@recordlabel.com
 
 servers:
   - url: https://api.recordlabel.com/v1
     description: Production server
+  - url: https://staging-api.recordlabel.com/v1
+    description: Staging server
 
 components:
   securitySchemes:
     basicAuth:
       type: http
       scheme: basic
-      description: Basic authentication to secure the API.
+      description: |
+        Basic authentication credentials required.
+        Username and password should be provided in the Authorization header.
+        Example: `Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=`
 
   schemas:
     Artist:
@@ -27,108 +45,418 @@ components:
         name:
           type: string
           description: The full name of the artist.
-          example: "John Doe"
+          minLength: 1
+          maxLength: 100
+          example: "Taylor Swift"
         genre:
           type: string
-          description: The musical genre of the artist.
-          example: "Rock"
+          description: The primary musical genre of the artist.
+          enum:
+            - Pop
+            - Rock
+            - Hip Hop
+            - R&B
+            - Jazz
+            - Classical
+            - Electronic
+            - Country
+            - Folk
+            - Metal
+            - Indie
+            - Alternative
+          example: "Pop"
         albumsPublished:
           type: integer
           description: Number of albums published under the label.
           minimum: 0
-          example: 5
+          maximum: 100
+          example: 10
         username:
           type: string
           description: Unique identifier/username for the artist.
-          example: "johndoe_official"
+          pattern: '^[a-zA-Z0-9_]+$'
+          minLength: 3
+          maxLength: 30
+          example: "taylorswift"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the artist was added to the database.
+          readOnly: true
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the artist record was last updated.
+          readOnly: true
+          example: "2024-01-15T10:30:00Z"
+
+    ArtistInput:
+      type: object
+      required:
+        - name
+        - genre
+        - albumsPublished
+        - username
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        genre:
+          type: string
+          enum:
+            - Pop
+            - Rock
+            - Hip Hop
+            - R&B
+            - Jazz
+            - Classical
+            - Electronic
+            - Country
+            - Folk
+            - Metal
+            - Indie
+            - Alternative
+        albumsPublished:
+          type: integer
+          minimum: 0
+          maximum: 100
+        username:
+          type: string
+          pattern: '^[a-zA-Z0-9_]+$'
+          minLength: 3
+          maxLength: 30
+
+    ArtistsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Artist'
+        pagination:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: Total number of artists available.
+            offset:
+              type: integer
+              description: Current page offset.
+            limit:
+              type: integer
+              description: Number of items per page.
+            next:
+              type: string
+              nullable: true
+              description: URL for the next page of results.
+            previous:
+              type: string
+              nullable: true
+              description: URL for the previous page of results.
 
     Error:
       type: object
+      required:
+        - error
       properties:
-        code:
-          type: string
-        message:
-          type: string
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code.
+            message:
+              type: string
+              description: Human-readable error message.
+            details:
+              type: object
+              description: Additional error context.
+
+  parameters:
+    OffsetParam:
+      name: offset
+      in: query
+      description: The number of items to skip before starting to collect the result set.
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      example: 0
+    
+    LimitParam:
+      name: limit
+      in: query
+      description: The maximum number of items to return.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+      example: 10
+
+    ArtistNameParam:
+      name: artistname
+      in: path
+      required: true
+      description: The username of the artist.
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9_]+$'
+        minLength: 3
+        maxLength: 30
+      example: "taylorswift"
+
+  responses:
+    Unauthorized:
+      description: Authentication failed or credentials not provided.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: "UNAUTHORIZED"
+              message: "Invalid or missing authentication credentials."
+    
+    NotFound:
+      description: The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: "NOT_FOUND"
+              message: "The requested artist was not found."
+    
+    BadRequest:
+      description: The request was invalid or cannot be processed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: "BAD_REQUEST"
+              message: "Invalid request parameters."
+              details:
+                field: "username"
+                issue: "Must contain only letters, numbers, and underscores."
+    
+    ServerError:
+      description: An unexpected error occurred on the server.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: "INTERNAL_SERVER_ERROR"
+              message: "An unexpected error occurred. Please try again later."
 
 security:
   - basicAuth: []
 
+tags:
+  - name: Artists
+    description: Operations related to artist management
+
 paths:
   /artists:
     get:
-      summary: Get a list of artists
-      description: Returns a list of artists with optional pagination.
+      tags:
+        - Artists
+      summary: Get a paginated list of artists
+      description: |
+        Retrieves a paginated list of artists from the record label's database.
+        Supports pagination through offset and limit parameters.
+      operationId: getArtists
       parameters:
-        - name: offset
-          in: query
-          description: The page number (starting from 0).
-          schema:
-            type: integer
-            default: 0
-        - name: limit
-          in: query
-          description: The number of items per page.
-          schema:
-            type: integer
-            default: 10
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
-          description: A list of artists.
+          description: Successfully retrieved the list of artists.
+          headers:
+            X-Total-Count:
+              description: Total number of artists in the database.
+              schema:
+                type: integer
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Artist'
+                $ref: '#/components/schemas/ArtistsResponse'
+              example:
+                data:
+                  - name: "Taylor Swift"
+                    genre: "Pop"
+                    albumsPublished: 10
+                    username: "taylorswift"
+                    createdAt: "2024-01-15T10:30:00Z"
+                    updatedAt: "2024-01-15T10:30:00Z"
+                  - name: "Ed Sheeran"
+                    genre: "Pop"
+                    albumsPublished: 6
+                    username: "edsheeran"
+                    createdAt: "2024-01-16T11:20:00Z"
+                    updatedAt: "2024-01-16T11:20:00Z"
+                pagination:
+                  total: 45
+                  offset: 0
+                  limit: 10
+                  next: "/artists?offset=10&limit=10"
+                  previous: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
-          description: Unauthorized - Basic authentication failed.
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags:
+        - Artists
+      summary: Add a new artist
+      description: Creates a new artist record in the database.
+      operationId: createArtist
+      requestBody:
+        required: true
+        description: Artist data to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArtistInput'
+            examples:
+              popArtist:
+                summary: Pop artist example
+                value:
+                  name: "Billie Eilish"
+                  genre: "Pop"
+                  albumsPublished: 2
+                  username: "billieeilish"
+              rockArtist:
+                summary: Rock artist example
+                value:
+                  name: "Foo Fighters"
+                  genre: "Rock"
+                  albumsPublished: 10
+                  username: "foofighters"
+      responses:
+        '201':
+          description: Artist successfully created.
+          headers:
+            Location:
+              description: URL of the newly created artist resource.
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artist'
+              example:
+                name: "Billie Eilish"
+                genre: "Pop"
+                albumsPublished: 2
+                username: "billieeilish"
+                createdAt: "2024-04-01T14:30:00Z"
+                updatedAt: "2024-04-01T14:30:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Artist with the same username already exists.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: "CONFLICT"
+                  message: "An artist with username 'billieeilish' already exists."
         '500':
-          description: Internal Server Error.
+          $ref: '#/components/responses/ServerError'
 
-    post:
-      summary: Add a new artist
-      description: Adds a new artist record to the database.
+  /artists/{artistname}:
+    get:
+      tags:
+        - Artists
+      summary: Get artist by username
+      description: Retrieves detailed information for a specific artist identified by their username.
+      operationId: getArtistByUsername
+      parameters:
+        - $ref: '#/components/parameters/ArtistNameParam'
+      responses:
+        '200':
+          description: Successfully retrieved the artist information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artist'
+              example:
+                name: "Taylor Swift"
+                genre: "Pop"
+                albumsPublished: 10
+                username: "taylorswift"
+                createdAt: "2024-01-15T10:30:00Z"
+                updatedAt: "2024-01-15T10:30:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      tags:
+        - Artists
+      summary: Update an existing artist
+      description: Updates all fields of an existing artist identified by username.
+      operationId: updateArtist
+      parameters:
+        - $ref: '#/components/parameters/ArtistNameParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Artist'
+              $ref: '#/components/schemas/ArtistInput'
       responses:
-        '201':
-          description: Artist created successfully.
+        '200':
+          description: Artist successfully updated.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Artist'
         '400':
-          description: Bad Request - Invalid artist data.
+          $ref: '#/components/responses/BadRequest'
         '401':
-          description: Unauthorized.
-
-  /artists/{artistname}:
-    get:
-      summary: Get artist by username
-      description: Returns detailed information for a specific artist.
-      parameters:
-        - name: artistname
-          in: path
-          required: true
-          description: The username of the artist.
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Artist found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Artist'
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Artist not found.
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - Artists
+      summary: Delete an artist
+      description: Removes an artist from the database.
+      operationId: deleteArtist
+      parameters:
+        - $ref: '#/components/parameters/ArtistNameParam'
+      responses:
+        '204':
+          description: Artist successfully deleted. No content returned.
         '401':
-          description: Unauthorized.
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'

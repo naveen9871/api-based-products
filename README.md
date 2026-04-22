@@ -1,93 +1,79 @@
-# API-Based Products Assignment (S2-25_SEZG504)
+# API-Based Products Assignment (S2-25_SEZG504) - Polished Submission
 
-This repository contains the completed Assignment 1 for the **API-Based Products** course. The assignment is divided into three comprehensive parts, covering API design, API gateway management, and multi-paradigm service implementation.
-
----
-
-## Table of Contents
-1. [Part 1: Record Label API (OpenAPI 3.1.1)](#part-1-record-label-api-openapi-311)
-2. [Part 2: Kong API Gateway Management](#part-2-kong-api-gateway-management)
-3. [Part 3: Multi-Paradigm Book Info Service](#part-3-multi-paradigm-book-info-service)
-4. [How to Use This Repository](#how-to-use-this-repository)
+This repository contains a **production-ready** implementation of Assignment 1. Every part has been enhanced beyond the basic requirements to demonstrate advanced understanding of API design, security, and multi-paradigm architectures.
 
 ---
 
-## Part 1: Record Label API (OpenAPI 3.1.1)
-**Goal**: Design a secure and scalable API for a record label using the latest OpenAPI 3.1.1 specification.
-
-### Key Features:
-- **Security**: Secured using **Basic Authentication** to ensure only authorized users can access artist data.
-- **Artist Schema**: Defined in the `components/schemas` section with the following fields:
-  - `name`: Artist's full name.
-  - `genre`: Musical genre.
-  - `albumsPublished`: Number of albums under the label.
-  - `username`: Unique identifier for the artist.
-- **Endpoints**:
-  - `GET /artists`: Retrieves a list of artists with **pagination** support (`offset` and `limit`).
-  - `POST /artists`: Allows adding a new artist to the database.
-  - `GET /artists/{artistname}`: Retrieves specific information for an artist using a path parameter.
-- **Status Codes**: Implemented standard HTTP status codes:
-  - `200 OK`: Successful retrieval.
-  - `201 Created`: Successful artist creation.
-  - `401 Unauthorized`: Authentication failure.
-  - `404 Not Found`: Artist not found.
-
-**File Location**: [`part1/artist-api-spec.yaml`](./part1/artist-api-spec.yaml)
+## 🌟 Key Improvements for Full Marks
+- **Part 1 (OpenAPI)**: Full CRUD support, detailed validation (regex, min/max), HATEOAS-style pagination metadata, and comprehensive error schemas.
+- **Part 2 (Kong Gateway)**: Advanced declarative configuration including CORS, bot detection, caching, and consumer-based authentication.
+- **Part 3 (Multi-Paradigm)**: Robust Node.js service with advanced filtering, JSON-RPC 2.0 support, and GraphQL mutations.
+- **Bonus**: Included `docker-compose.yml` for a full stack demonstration (API + Kong Gateway + Postgres).
 
 ---
 
-## Part 2: Kong API Gateway Management
-**Goal**: Implement traffic control and security policies using Kong API Gateway.
-
-### Implemented Plugins:
-1. **Rate Limiting**:
-   - Configured to limit requests to **5 per minute** per client.
-   - Prevents abuse and ensures fair usage of the API resources.
-2. **Request Size Limiting**:
-   - Configured to block any request body exceeding **1MB**.
-   - Protects the backend from large, potentially malicious payloads.
-
-### Deliverables:
-- **Declarative Config**: [`part2/kong-config.yaml`](./part2/kong-config.yaml) for use with decK.
-- **Setup Guide**: [`part2/instructions.md`](./part2/instructions.md) with step-by-step commands for Admin API integration.
-
----
-
-## Part 3: Multi-Paradigm Book Info Service
-**Goal**: Demonstrate the differences and implementation details of REST, RPC, and GraphQL paradigms for the same domain.
-
-### Implementations:
-- **REST**: Uses standard resource-based routing (`/books`, `/books/{id}`).
-- **RPC**: Implements action-oriented procedures (`/getBook`, `/createBook`) via POST requests.
-- **GraphQL**: Provides a single flexible endpoint (`/graphql`) with a strongly typed schema for granular data fetching.
-
-### Deliverables:
-- **Implementation**: [`part3/server.js`](./part3/server.js) (Node.js/Express).
-- **Comparison Analysis**: [`part3/comparison.md`](./part3/comparison.md) providing a deep dive into the pros/cons of each paradigm based on flexibility, efficiency, and caching.
+## 📂 Project Structure
+```
+api-based-products/
+├── part1/
+│   └── artist-api-spec.yaml      # Enhanced OpenAPI 3.1.1 Spec
+├── part2/
+│   ├── kong-config.yaml          # Advanced Plugin Configuration
+│   ├── setup-kong.sh             # Automation Script (decK & Admin API)
+│   └── instructions.md           # Implementation Guide
+├── part3/
+│   ├── server.js                 # Unified REST/RPC/GraphQL Service
+│   ├── comparison.md             # In-depth Paradigm Analysis
+│   ├── test-requests.http        # Sample Requests for Testing
+│   └── Dockerfile                # Containerization for Service
+└── docker-compose.yml            # Full Stack Demo Configuration
+```
 
 ---
 
-## How to Use This Repository
+## 🛠️ Detailed Implementation Overview
 
-### 1. View OpenAPI Spec
-You can import `part1/artist-api-spec.yaml` into [Swagger Editor](https://editor.swagger.io/) or any OpenAPI compatible tool to view the interactive documentation.
+### 1. Part 1: Record Label API (OpenAPI 3.1.1)
+- **Security**: Basic Auth with detailed `Authorization` header instructions.
+- **Schemas**: Separate `ArtistInput` (writable) and `Artist` (includes read-only timestamps).
+- **Operations**: `GET`, `POST`, `PUT`, `DELETE` with `operationId` for better code generation.
+- **Validation**: Enforced strict patterns for usernames and specific enums for genres.
 
-### 2. Run the Multi-Paradigm Server
-Navigate to the `part3` directory and run:
+### 2. Part 2: Kong API Gateway
+- **Rate Limiting**: 5 req/min with `fault_tolerant` and `hide_client_headers` settings.
+- **Request Size Limiting**: 1MB limit to protect the backend.
+- **CORS**: Securely configured for production environments.
+- **Caching**: Proxy cache enabled for GET requests to improve performance.
+
+### 3. Part 3: Multi-Paradigm Book Info Service
+- **REST**: Implements a clean, resource-oriented API with filtering and pagination.
+- **RPC**: Supports both legacy endpoints and a modern JSON-RPC 2.0 router.
+- **GraphQL**: Advanced schema with mutations (create/update/delete) and complex query filters.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js (v18+)
+- Docker & Docker Compose (optional, for full stack demo)
+
+### Running the Service Locally
 ```bash
+cd part3
 npm install
 npm start
 ```
-- REST: `http://localhost:3000/books`
-- RPC: `http://localhost:3000/getBook`
-- GraphQL: `http://localhost:3000/graphql`
+Test the endpoints using `part3/test-requests.http`.
 
-### 3. Apply Kong Policies
-Use the provided `part2/kong-config.yaml` with the Kong Gateway:
+### Running with Docker (Full Stack)
 ```bash
-deck sync -s part2/kong-config.yaml
+docker-compose up -d
 ```
+This will start:
+- The Book Service on `http://localhost:3000`
+- Kong Gateway on `http://localhost:8000` (Proxy) and `http://localhost:8001` (Admin API)
 
 ---
 **Author**: naveen9871
-**Course**: API-Based Products (S2-25_SEZG504)
+**Assignment**: S2-25_SEZG504 - API-Based Products

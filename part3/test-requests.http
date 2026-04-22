@@ -1,0 +1,55 @@
+### REST API: Get all books
+GET http://localhost:3000/books
+
+### REST API: Get book by ID
+GET http://localhost:3000/books/1
+
+### REST API: Create a new book
+POST http://localhost:3000/books
+Content-Type: application/json
+
+{
+  "title": "Brave New World",
+  "author": "Aldous Huxley",
+  "year": 1932,
+  "genre": "Dystopian",
+  "isbn": "978-0060850524"
+}
+
+### RPC API: Get book by ID (JSON-RPC 2.0 style)
+POST http://localhost:3000/rpc
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "getBook",
+  "params": { "id": 1 },
+  "id": 1
+}
+
+### RPC API: Search books
+POST http://localhost:3000/rpc
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "method": "searchBooks",
+  "params": { "query": "1984" },
+  "id": 2
+}
+
+### GraphQL: Get book details
+POST http://localhost:3000/graphql
+Content-Type: application/json
+
+{
+  "query": "{ book(id: 1) { title author year genre } }"
+}
+
+### GraphQL: List all books with specific fields
+POST http://localhost:3000/graphql
+Content-Type: application/json
+
+{
+  "query": "{ books { id title author } }"
+}
