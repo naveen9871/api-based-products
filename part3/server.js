@@ -320,14 +320,26 @@ app.post('/getBook', (req, res) => {
 });
 
 app.post('/createBook', (req, res) => {
-  const { title, author } = req.body;
+  const { title, author, year, genre, isbn, publisher, pages, price, inStock } = req.body;
+  
+  if (!title || !author) {
+    return res.status(200).json({ 
+      error: { code: -32602, message: "Title and author are required" },
+      success: false 
+    });
+  }
+
   const newBook = { 
     id: books.length + 1, 
     title, 
     author,
-    year: new Date().getFullYear(),
-    genre: 'Unknown',
-    inStock: true
+    year: year || new Date().getFullYear(),
+    genre: genre || 'Unknown',
+    isbn: isbn || 'N/A',
+    publisher: publisher || 'Unknown',
+    pages: pages || 0,
+    price: price || 0.00,
+    inStock: inStock !== undefined ? inStock : true
   };
   books.push(newBook);
   res.status(200).json({ result: newBook, success: true });
